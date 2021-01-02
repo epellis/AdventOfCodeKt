@@ -1,15 +1,18 @@
 package com.nedellis
 
-import zio.console._
+import zio.interop.twitter._
 
-object App extends zio.App {
-  def run(args: List[String]) =
-    myAppLogic.exitCode
+import com.twitter.finagle.{Http, Service}
+import com.twitter.finagle.http
+import com.twitter.util.{Await, Future}
 
-  val myAppLogic =
-    for {
-      _ <- putStrLn("Hello! What is your name?")
-      name <- getStrLn
-      _ <- putStrLn(s"Hello, ${name}, welcome to ZIO!")
-    } yield ()
+object App extends App {
+  val service = new Service[http.Request, http.Response] {
+    def apply(req: http.Request): Future[http.Response] =
+      Future.value(
+        http.Response(req.version, http.Status.Ok)
+      )
+  }
+  val server = Http.serve(":8080", service)
+  Await.ready(server)
 }

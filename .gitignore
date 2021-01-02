@@ -12,3 +12,5 @@ buildNumber.properties
 .metals
 .vscode
 .scalafmt.conf
+.idea
+whoami.iml
