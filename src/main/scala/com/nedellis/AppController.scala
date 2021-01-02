@@ -12,5 +12,6 @@ class AppController extends Controller {
   }
 
   post("/advertise") { request: Advertise =>
+    logger.info(s"Advertise: $request")
   }
 }
