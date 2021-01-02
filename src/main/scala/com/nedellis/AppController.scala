@@ -1,6 +1,6 @@
 package com.nedellis
 
-import com.nedellis.Messages.Advertise
+import .Heartbeat
 import com.twitter.finagle.http.Request
 import com.twitter.finatra.http.Controller
 
@@ -11,7 +11,7 @@ class AppController extends Controller {
     "Hello World"
   }
 
-  post("/advertise") { request: Advertise =>
-    AppState.insertMember(request.address)
+  post("/heartbeat") { request: Heartbeat =>
+    AppState.updateHeart(request.address)
   }
 }

@@ -2,33 +2,52 @@ package com.nedellis
 
 import io.getquill.{LowerCase, SqliteJdbcContext}
 
-object MemberTable {
-  val CREATE_TABLE_STMT: String =
-    """CREATE TABLE IF NOT EXISTS member (
-      | id integer NOT NULL PRIMARY KEY,
-      | address text NOT NULL
+object HeartbeatTable extends AppState.DBTable {
+  override def CREATE_STMT: String =
+    """CREATE TABLE IF NOT EXISTS heartbeat (
+      | address text NOT NULL PRIMARY KEY,
+      | count integer NOT NULL
       |);
       |""".stripMargin
 
-  case class Member(id: Int, address: String)
+  case class Heartbeat(address: String, count: Long) {}
 
 }
 
+object KVTable extends AppState.DBTable {
+  override def CREATE_STMT: String =
+    """CREATE TABLE IF NOT EXISTS kv (
+      | key text NOT NULL PRIMARY KEY,
+      | value text NOT NULL
+      |);
+      |""".stripMargin
+
+  case class KV(key: String, value: String) {}
+
+}
+
+
 object AppState {
+
+  trait DBTable {
+    def CREATE_STMT: String
+  }
+
   lazy val ctx = new SqliteJdbcContext(LowerCase, "ctx")
 
   import ctx._
-  import MemberTable.Member
+  import HeartbeatTable.Heartbeat
 
-  ctx.executeAction(MemberTable.CREATE_TABLE_STMT)
+  ctx.executeAction(HeartbeatTable.CREATE_STMT)
+  ctx.executeAction(KVTable.CREATE_STMT)
 
-  def insertMember(address: String): Unit = {
-    val stmt = quote(query[Member].insert(_.address -> lift(address)))
+  def updateHeart(heartbeat: Heartbeat): Unit = {
+    val stmt = quote(query[Heartbeat].insert(lift(heartbeat)))
     ctx.run(stmt)
   }
 
-  def listMembers(): List[Member] = {
-    val stmt = quote(query[Member].filter(_ => true))
+  def listHearts(): List[Heartbeat] = {
+    val stmt = quote(query[Heartbeat].filter(_ => true))
     ctx.run(stmt)
   }
 }
