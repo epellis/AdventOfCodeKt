@@ -1,7 +1,6 @@
 package com.nedellis
 
 import com.twitter.finagle.http.{Request, Response}
-import zio.interop.twitter._
 import com.twitter.finatra.http.HttpServer
 import com.twitter.finatra.http.filters.{LoggingMDCFilter, TraceIdMDCFilter, CommonFilters}
 import com.twitter.finatra.http.routing.HttpRouter

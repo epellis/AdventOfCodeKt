@@ -5,12 +5,12 @@ import com.twitter.finagle.http.Request
 import com.twitter.finatra.http.Controller
 
 class AppController extends Controller {
+  val state = new AppState()
+
   get("/") { request: Request =>
     "Hello World"
   }
 
   post("/advertise") { request: Advertise =>
-    info(request)
-    "Registered"
   }
 }
