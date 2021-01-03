@@ -23,7 +23,7 @@ class HeartbeatTable(implicit override val session: AutoSession) extends DBTable
   }
 
   def updateHeartbeat(heartbeat: Heartbeat): Unit = {
-    sql"insert into heartbeat (address, count) values (${heartbeat.address}, ${heartbeat.count})".update().apply()
+    sql"merge into heartbeat key (address) values (${heartbeat.address}, ${heartbeat.count})".update().apply()
   }
 
   def getHeartbeats: List[Heartbeat] = {
@@ -58,10 +58,8 @@ abstract class DBTable(implicit val session: AutoSession) {
 
 class AppState {
 
-  //  Class.forName("org.sqlite.JDBC")
-  //  ConnectionPool.singleton("jdbc:sqlite::memory:", null, null)
   Class.forName("org.h2.Driver")
-  ConnectionPool.singleton("jdbc:h2:mem:hello", "user", "pass")
+  ConnectionPool.singleton("jdbc:h2:mem:hello", null, null)
 
   private implicit val session = AutoSession
 
@@ -69,5 +67,4 @@ class AppState {
   val kvTable = new KVTable()
 
   heartbeatTable.updateHeartbeat(Heartbeat(AppConfig.ipAddress, 0L))
-  println(heartbeatTable.getSelfHeartbeat)
 }
