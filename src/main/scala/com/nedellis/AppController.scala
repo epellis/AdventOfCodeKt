@@ -12,6 +12,7 @@ class AppController extends Controller {
   }
 
   post("/heartbeat") { request: Heartbeat =>
-    state.heartbeatTable.updateHeartbeat(request)
+    val currentEpoch = state.heartbeatTable.currentEpoch
+    state.heartbeatTable.updateHeartbeat(request.copy(epoch = currentEpoch))
   }
 }

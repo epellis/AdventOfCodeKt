@@ -31,12 +31,29 @@ class HeartbeatTask(state: AppState) extends AppTask with StrictLogging {
   override def periodSeconds: Int = 3
 
   override def runTask(): Unit = {
-    val currentHeartbeat = state.heartbeatTable.getSelfHeartbeat
-    state.heartbeatTable.updateHeartbeat(currentHeartbeat.copy(count = currentHeartbeat.count + 1))
+    state.heartbeatTable.incrementSelfHeartbeat()
 
-    logger.info(s"CurrentHeartbeat: $currentHeartbeat")
+    doGarbageCollect()
 
-    val heartbeats = state.heartbeatTable.getHeartbeats
+    doGossip()
+  }
+
+  def doGarbageCollect(): Unit = {
+    val maxEpochDifference = 2
+
+    val currentEpoch = state.heartbeatTable.currentEpoch
+    val externalHeartbeats = state.heartbeatTable.getExternalHeartbeats
+
+    val expiredHeartbeats = externalHeartbeats.filter { h =>
+      assert(currentEpoch >= h.epoch)
+      currentEpoch - h.epoch > maxEpochDifference
+    }
+
+    logger.info(s"Expiring: $expiredHeartbeats")
+  }
+
+  def doGossip(): Unit = {
+    val heartbeats = state.heartbeatTable.getExternalHeartbeats
     if (heartbeats.nonEmpty) {
       val neighbor = heartbeats(Random.nextInt(heartbeats.size))
       logger.info(s"Heartbeating to $neighbor")
