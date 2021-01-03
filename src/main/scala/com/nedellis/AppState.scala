@@ -9,7 +9,7 @@ case class KV(key: String, value: String) {}
 class HeartbeatTable(implicit override val session: AutoSession) extends DBTable {
   override def CREATE_STMT: SQLExecution =
     sql"""CREATE TABLE IF NOT EXISTS heartbeat (
-         | address text NOT NULL PRIMARY KEY,
+         | address VARCHAR(255) NOT NULL PRIMARY KEY,
          | count integer NOT NULL
          |);
          |""".stripMargin.execute()
@@ -42,8 +42,8 @@ class KVTable(implicit override val session: AutoSession) extends DBTable {
 
   override def CREATE_STMT: SQLExecution =
     sql"""CREATE TABLE IF NOT EXISTS kv (
-         | key text NOT NULL PRIMARY KEY,
-         | value text NOT NULL
+         | key VARCHAR(255) NOT NULL PRIMARY KEY,
+         | value VARCHAR(255) NOT NULL
          |);
          |""".stripMargin.execute()
 
@@ -58,8 +58,10 @@ abstract class DBTable(implicit val session: AutoSession) {
 
 class AppState {
 
-  Class.forName("org.sqlite.JDBC")
-  ConnectionPool.singleton("jdbc:sqlite::memory:", null, null)
+  //  Class.forName("org.sqlite.JDBC")
+  //  ConnectionPool.singleton("jdbc:sqlite::memory:", null, null)
+  Class.forName("org.h2.Driver")
+  ConnectionPool.singleton("jdbc:h2:mem:hello", "user", "pass")
 
   private implicit val session = AutoSession
 
@@ -67,4 +69,5 @@ class AppState {
   val kvTable = new KVTable()
 
   heartbeatTable.updateHeartbeat(Heartbeat(AppConfig.ipAddress, 0L))
+  println(heartbeatTable.getSelfHeartbeat)
 }
