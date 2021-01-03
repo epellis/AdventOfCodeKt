@@ -1,53 +1,70 @@
 package com.nedellis
 
-import io.getquill.{LowerCase, SqliteJdbcContext}
+import scalikejdbc._
 
-object HeartbeatTable extends AppState.DBTable {
-  override def CREATE_STMT: String =
-    """CREATE TABLE IF NOT EXISTS heartbeat (
-      | address text NOT NULL PRIMARY KEY,
-      | count integer NOT NULL
-      |);
-      |""".stripMargin
+case class Heartbeat(address: String, count: Long) {}
 
-  case class Heartbeat(address: String, count: Long) {}
+case class KV(key: String, value: String) {}
+
+class HeartbeatTable(implicit override val session: AutoSession) extends DBTable {
+  override def CREATE_STMT: SQLExecution =
+    sql"""CREATE TABLE IF NOT EXISTS heartbeat (
+         | address text NOT NULL PRIMARY KEY,
+         | count integer NOT NULL
+         |);
+         |""".stripMargin.execute()
+
+  object Heartbeat extends SQLSyntaxSupport[Heartbeat] {
+    override val tableName = "heartbeat"
+
+    def apply(rs: WrappedResultSet) = new Heartbeat(
+      rs.string("address"), rs.long("count")
+    )
+  }
+
+  def updateHeartbeat(heartbeat: Heartbeat): Unit = {
+    sql"insert into heartbeat (address, count) values (${heartbeat.address}, ${heartbeat.count})".update().apply()
+  }
+
+  def getHeartbeats: List[Heartbeat] = {
+    sql"select * from heartbeat".map(h => Heartbeat(h)).list.apply()
+  }
+
+  def getHeartbeat(address: String): Option[Heartbeat] = {
+    sql"select * from heartbeat where address = $address".map(h => Heartbeat(h)).single().apply()
+  }
+
+  def getSelfHeartbeat: Heartbeat = getHeartbeat(AppConfig.ipAddress).get
+}
+
+class KVTable(implicit override val session: AutoSession) extends DBTable {
+  val HEARTBEAT_KEY = "heartbeat"
+
+  override def CREATE_STMT: SQLExecution =
+    sql"""CREATE TABLE IF NOT EXISTS kv (
+         | key text NOT NULL PRIMARY KEY,
+         | value text NOT NULL
+         |);
+         |""".stripMargin.execute()
 
 }
 
-object KVTable extends AppState.DBTable {
-  override def CREATE_STMT: String =
-    """CREATE TABLE IF NOT EXISTS kv (
-      | key text NOT NULL PRIMARY KEY,
-      | value text NOT NULL
-      |);
-      |""".stripMargin
+abstract class DBTable(implicit val session: AutoSession) {
+  def CREATE_STMT: SQLExecution
 
-  case class KV(key: String, value: String) {}
-
+  CREATE_STMT.apply()
 }
 
 
-object AppState {
+class AppState {
 
-  trait DBTable {
-    def CREATE_STMT: String
-  }
+  Class.forName("org.sqlite.JDBC")
+  ConnectionPool.singleton("jdbc:sqlite::memory:", null, null)
 
-  lazy val ctx = new SqliteJdbcContext(LowerCase, "ctx")
+  private implicit val session = AutoSession
 
-  import ctx._
-  import HeartbeatTable.Heartbeat
+  val heartbeatTable = new HeartbeatTable()
+  val kvTable = new KVTable()
 
-  ctx.executeAction(HeartbeatTable.CREATE_STMT)
-  ctx.executeAction(KVTable.CREATE_STMT)
-
-  def updateHeart(heartbeat: Heartbeat): Unit = {
-    val stmt = quote(query[Heartbeat].insert(lift(heartbeat)))
-    ctx.run(stmt)
-  }
-
-  def listHearts(): List[Heartbeat] = {
-    val stmt = quote(query[Heartbeat].filter(_ => true))
-    ctx.run(stmt)
-  }
+  heartbeatTable.updateHeartbeat(Heartbeat(AppConfig.ipAddress, 0L))
 }

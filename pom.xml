@@ -71,11 +71,11 @@
             <artifactId>sqlite-jdbc</artifactId>
             <version>3.34.0</version>
         </dependency>
-        <dependency>
-            <groupId>io.getquill</groupId>
-            <artifactId>quill-jdbc_2.13</artifactId>
-            <version>3.6.0-RC3</version>
-        </dependency>
+        <!--        <dependency>-->
+        <!--            <groupId>io.getquill</groupId>-->
+        <!--            <artifactId>quill-jdbc_2.13</artifactId>-->
+        <!--            <version>3.6.0-RC3</version>-->
+        <!--        </dependency>-->
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
@@ -86,6 +86,16 @@
             <artifactId>scala-logging_2.13</artifactId>
             <version>3.9.2</version>
         </dependency>
+        <dependency>
+            <groupId>org.scalikejdbc</groupId>
+            <artifactId>scalikejdbc_2.13</artifactId>
+            <version>3.5.0</version>
+        </dependency>
+        <!--        <dependency>-->
+        <!--            <groupId>com.h2database</groupId>-->
+        <!--            <artifactId>h2</artifactId>-->
+        <!--            <version>1.4.200</version>-->
+        <!--        </dependency>-->
     </dependencies>
 
     <build>

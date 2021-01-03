@@ -5,33 +5,41 @@ import com.typesafe.scalalogging.StrictLogging
 import java.util.concurrent._
 import scala.util.Random
 
+class AppTasks(state: AppState) {
+  val ex = new ScheduledThreadPoolExecutor(1)
 
-object HeartbeatTask extends AppTask.AppTaskTrait with StrictLogging {
-  override def periodSeconds: Int = 3
+  val heartbeatTask = new HeartbeatTask(state)
 
-  override def run(): Unit = {
-    val hearts = AppState.listHearts()
-    if (hearts.nonEmpty) {
-      val neighbor = hearts(Random.nextInt(hearts.size))
-      logger.info(s"Heartbeating to $neighbor")
+  heartbeatTask.startScheduleTask(ex)
+}
+
+trait AppTask {
+  def periodSeconds: Int
+
+  def runTask(): Unit
+
+  def startScheduleTask(ex: ScheduledThreadPoolExecutor): Unit = {
+    val taskRunnable = new Runnable {
+      override def run(): Unit = runTask()
     }
+
+    ex.scheduleAtFixedRate(taskRunnable, 0, periodSeconds, TimeUnit.SECONDS)
   }
 }
 
-object AppTask {
+class HeartbeatTask(state: AppState) extends AppTask with StrictLogging {
+  override def periodSeconds: Int = 3
 
-  trait AppTaskTrait {
-    def periodSeconds: Int
+  override def runTask(): Unit = {
+    val currentHeartbeat = state.heartbeatTable.getSelfHeartbeat
+    state.heartbeatTable.updateHeartbeat(currentHeartbeat.copy(count = currentHeartbeat.count + 1))
 
-    def run(): Unit
-  }
+    logger.info(s"CurrentHeartbeat: $currentHeartbeat")
 
-  val ex = new ScheduledThreadPoolExecutor(1)
-
-  def startScheduleTask(task: AppTaskTrait): Unit = {
-    val taskRunnable = new Runnable {
-      override def run(): Unit = task.run()
+    val heartbeats = state.heartbeatTable.getHeartbeats
+    if (heartbeats.nonEmpty) {
+      val neighbor = heartbeats(Random.nextInt(heartbeats.size))
+      logger.info(s"Heartbeating to $neighbor")
     }
-    ex.scheduleAtFixedRate(taskRunnable, 0, task.periodSeconds, TimeUnit.SECONDS)
   }
 }
