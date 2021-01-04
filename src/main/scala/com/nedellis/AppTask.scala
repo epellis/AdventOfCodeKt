@@ -5,10 +5,10 @@ import com.typesafe.scalalogging.StrictLogging
 import java.util.concurrent._
 import scala.util.Random
 
-class AppTasks(state: AppState) {
+class AppTasks(state: AppState, client: AppClients) {
   val ex = new ScheduledThreadPoolExecutor(1)
 
-  val heartbeatTask = new HeartbeatTask(state)
+  val heartbeatTask = new HeartbeatTask(state, client)
 
   heartbeatTask.startScheduleTask(ex)
 }
@@ -27,7 +27,7 @@ trait AppTask {
   }
 }
 
-class HeartbeatTask(state: AppState) extends AppTask with StrictLogging {
+class HeartbeatTask(state: AppState, client: AppClients) extends AppTask with StrictLogging {
   override def periodSeconds: Int = 3
 
   override def runTask(): Unit = {
@@ -49,7 +49,11 @@ class HeartbeatTask(state: AppState) extends AppTask with StrictLogging {
       currentEpoch - h.epoch > maxEpochDifference
     }
 
-    logger.info(s"Expiring: $expiredHeartbeats")
+    if (expiredHeartbeats.nonEmpty) {
+      logger.info(s"Expiring: $expiredHeartbeats")
+    }
+
+    state.heartbeatTable.deleteHeartbeats(expiredHeartbeats)
   }
 
   def doGossip(): Unit = {
@@ -57,6 +61,7 @@ class HeartbeatTask(state: AppState) extends AppTask with StrictLogging {
     if (heartbeats.nonEmpty) {
       val neighbor = heartbeats(Random.nextInt(heartbeats.size))
       logger.info(s"Heartbeating to $neighbor")
+      //      client.heartbeatClient(neighbor.address).postHeartbeat(state.heartbeatTable.getSelfHeartbeat)
     }
   }
 }

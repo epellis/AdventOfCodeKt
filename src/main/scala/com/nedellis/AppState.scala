@@ -2,9 +2,7 @@ package com.nedellis
 
 import scalikejdbc._
 
-case class Heartbeat(address: String, count: Long, epoch: Long) {}
-
-case class KV(key: String, value: String) {}
+import AppSchema._
 
 class HeartbeatTable(implicit override val session: AutoSession) extends DBTable {
   override def CREATE_STMT: SQLExecution =
@@ -33,6 +31,12 @@ class HeartbeatTable(implicit override val session: AutoSession) extends DBTable
     val currentHeartbeat = getSelfHeartbeat
     val updatedHeartbeat = currentHeartbeat.copy(count = currentHeartbeat.count + 1, epoch = currentHeartbeat.epoch + 1)
     updateHeartbeat(updatedHeartbeat)
+  }
+
+  def deleteHeartbeats(heartbeats: List[Heartbeat]): Unit = {
+    heartbeats.foreach { h =>
+      sql"delete from heartbeat where address = ${h.address}".execute().apply()
+    }
   }
 
   def getHeartbeats: List[Heartbeat] = {
